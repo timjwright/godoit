@@ -10,6 +10,7 @@ import (
 type GoDoItConfig struct {
 	Include []string `toml:"include" doc:"Paths to scan"`
 	JobExecutorScript string`toml:"JobExecutorScript" doc:"Paths for job executor script"`
+	ScanTime int `toml:"ScanTime" doc:"Scan time in seconds"`
 }
 
 func LoadConfig() *GoDoItConfig {
@@ -18,7 +19,8 @@ func LoadConfig() *GoDoItConfig {
 	}
 	cfgFile := os.Args[1]
 	log.Printf("Loading config file: %s", cfgFile)
-	cfg, err := config.NewConfig(cfgFile, nil)
+	defaults := GoDoItConfig{[]string{}, "", 30}
+	cfg, err := config.NewConfig(cfgFile, defaults)
 	if err != nil {
 		log.Fatalf("Error loading configuration: %s", err.Error())
 	}

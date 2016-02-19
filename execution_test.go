@@ -6,7 +6,8 @@ import (
 )
 
 func TestExecutor(t *testing.T) {
-	JobExecutor exec = JobExecutorFromScript("/bin/bash/echo Hello")
-	exec.
+	// TODO...
+	jobExec := JobExecutorFromScript("./test_wrapper.sh")
+	jobExec("name","path")
 	assert.True(t, true, "Failed to parse job")
 }

@@ -9,14 +9,18 @@ import (
 type JobExecutor func(jobName, jobPath string)
 
 func JobExecutorFromScript(jobExecutorScript string) JobExecutor {
-	expandedJobExecutorScript := os.ExpandEnv(jobExecutorScript)
+	if len(jobExecutorScript) == 0 {
+		log.Fatalf("Job executor is not defined")
+	}
+	jobExecutorScript = os.ExpandEnv(jobExecutorScript)
 	return func(jobName, jobPath string) {
-		cmd := exec.Command(expandedJobExecutorScript, jobName, jobPath)
+		cmd := exec.Command(jobExecutorScript, jobName, jobPath)
+		log.Printf("Running comand line: %s %s %s", jobExecutorScript, jobName, jobPath)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 		if err != nil {
-			log.Printf("ERROR: Failed to execute executor script %s", expandedJobExecutorScript)
+			log.Printf("ERROR: Failed to execute executor script %s %s %s", jobExecutorScript, jobName, jobPath)
 		}
 	}
 }

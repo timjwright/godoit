@@ -5,16 +5,18 @@ import (
 	"os"
 	"os/signal"
 	"log"
+	"fmt"
 )
 
 
 func main() {
 	log.Println("Starting GoDoIt")
 
-	scanner := NewScanner(LoadConfig())
+	config := LoadConfig()
+	scanner := NewScanner(config)
 
 	cron := cron.New()
-	cron.AddFunc("@every 5s", func(){scanner.Run()})
+	cron.AddFunc(fmt.Sprintf("@every %ds",config.ScanTime), func(){scanner.Run()})
 	log.Println("Starting scanner")
 	cron.Start()
 
