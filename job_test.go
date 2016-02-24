@@ -14,11 +14,11 @@ func TestPathMatching(t *testing.T) {
 }
 
 func TestPathMatchingWithRepalce(t *testing.T) {
-	job := ParseJobFile("a_path", "0 30 @ @ @ @  job name.godoit")
+	job := ParseJobFile("a_path", "0 0%5 x x x x  job name.godoit")
 	assert.NotNil(t, job, "Failed to parse job")
-	assert.Equal(t, "0 30 * * * *", job.Spec)
+	assert.Equal(t, "0 0/5 * * * *", job.Spec)
 	assert.Equal(t, "job name", job.Name)
-	assert.Equal(t, "a_path/0 30 @ @ @ @  job name.godoit", job.Filepath)
+	assert.Equal(t, "a_path/0 0%5 x x x x  job name.godoit", job.Filepath)
 }
 
 func TestPathMatching2(t *testing.T) {

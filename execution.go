@@ -15,7 +15,7 @@ func JobExecutorFromScript(jobExecutorScript string) JobExecutor {
 	jobExecutorScript = os.ExpandEnv(jobExecutorScript)
 	return func(jobName, jobPath string) {
 		cmd := exec.Command(jobExecutorScript, jobName, jobPath)
-		log.Printf("Running comand line: %s %s %s", jobExecutorScript, jobName, jobPath)
+		log.Printf("Running comand line: %s '%s' '%s'", jobExecutorScript, jobName, jobPath)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
