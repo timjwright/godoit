@@ -19,7 +19,6 @@ func main() {
 		MaxSize:    config.LogMaxSize, // megabytes
 		MaxAge:     config.LogMaxAge, //days
 	})
-	log.Printf("%d ", config.LogMaxSize)
 	scanner := NewScanner(config)
 
 	cron := cron.New()
