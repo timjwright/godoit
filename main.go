@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/robfig/cron"
+	"github.com/natefinch/lumberjack"
 	"os"
 	"os/signal"
 	"log"
@@ -11,8 +12,14 @@ import (
 
 func main() {
 	log.Println("Starting GoDoIt")
-
 	config := LoadConfig()
+
+	log.SetOutput(&lumberjack.Logger{
+		Filename:   os.ExpandEnv(config.LogFile),
+		MaxSize:    config.LogMaxSize, // megabytes
+		MaxAge:     config.LogMaxAge, //days
+	})
+	log.Printf("%d ", config.LogMaxSize)
 	scanner := NewScanner(config)
 
 	cron := cron.New()
