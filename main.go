@@ -14,12 +14,13 @@ func main() {
 	log.Println("Starting GoDoIt")
 	config := LoadConfig()
 
-	log.SetOutput(&lumberjack.Logger{
+	logger := &lumberjack.Logger{
 		Filename:   os.ExpandEnv(config.LogFile),
 		MaxSize:    config.LogMaxSize, // megabytes
 		MaxAge:     config.LogMaxAge, //days
-	})
-	scanner := NewScanner(config)
+	}
+	log.SetOutput(logger)
+	scanner := NewScanner(config, logger)
 
 	cron := cron.New()
 	cron.AddFunc(fmt.Sprintf("@every %ds",config.ScanTime), func(){scanner.Run()})

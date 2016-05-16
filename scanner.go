@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"os"
 	"path"
+	"io"
 )
 
 type GoDoItScanner struct {
@@ -12,9 +13,9 @@ type GoDoItScanner struct {
 	jobSets map[string]*JobSet
 }
 
-func NewScanner(config *GoDoItConfig) *GoDoItScanner {
+func NewScanner(config *GoDoItConfig, output io.Writer) *GoDoItScanner {
 	return &GoDoItScanner{
-		JobExecutorFromScript(config.JobExecutorScript),
+		JobExecutorFromScript(config.JobExecutorScript, output),
 		config,
 		make(map[string]*JobSet)}
 }
