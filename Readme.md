@@ -32,9 +32,25 @@ The configuration file is of the format:
 
 The `scanTime` is in seconds. The `logMaxSize` is in megabytes.
 
+###Job Scripts
+The filename of the executor script is of the form:
+
+    <cronspec> <jobname>.godoit
+    e.g.
+    0 0 18 x x SUN weekend restart.godoit
+
+In the cron spec alternative charecters can be used to
+make file names eaier to manage:
+* `*` can be replaced with `x`
+* `/` can be replaced with `%`
+
+###Job Executor
+
 The job executor script will be passed two arguments:
 * the job name
 * the path to the godoit job whch is to be run
+
+###Logging
 
 Godoit writes to a rotating logfile. The logfile includes the output
 of the job executor script (`stdout` and `stderr`)
