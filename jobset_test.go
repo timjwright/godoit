@@ -48,7 +48,7 @@ func TestScanDirWithIgnoredFile(t *testing.T) {
 func TestScanCreate1SecondJob(t *testing.T) {
 	withJobSet(func(jobSet *JobSet) {
 		// Commened out job does not create a job
-		createJob(jobSet, "* * * * * * TestScanCreate1SecondJob")
+		createJob(jobSet, "* * * * * * TestScanCreate1SecondJob.godoit")
 		assertRescanUpdates(t, jobSet, true)
 		assertJobCount(t, jobSet, 1)
 		time.Sleep(time.Second * 6)
@@ -60,12 +60,12 @@ func TestScanCreate1SecondJob(t *testing.T) {
 
 func TestScanRemoveJob(t *testing.T) {
 	withJobSet(func(jobSet *JobSet) {
-		createJob(jobSet, "* * * * * * TestScanRemoveJob")
+		createJob(jobSet, "* * * * * * TestScanRemoveJob.godoit")
 		assertRescanUpdates(t, jobSet, true)
 		assertJobCount(t, jobSet, 1)
 		time.Sleep(time.Second * 2)
 
-		removeJob(t, jobSet, "* * * * * * TestScanRemoveJob")
+		removeJob(t, jobSet, "* * * * * * TestScanRemoveJob.godoit")
 		assertRescanUpdates(t, jobSet, true)
 		assertJobCount(t, jobSet, 0)
 		time.Sleep(time.Second * 4)
@@ -75,15 +75,15 @@ func TestScanRemoveJob(t *testing.T) {
 
 func TestScanSwapJobs(t *testing.T) {
 	withJobSet(func(jobSet *JobSet) {
-		createJob(jobSet, "* * * * * * TestScanSwapJobs")
-		createJob(jobSet, "* * * * * * TestScanSwapJobsX")
+		createJob(jobSet, "* * * * * * TestScanSwapJobs.godoit")
+		createJob(jobSet, "* * * * * * TestScanSwapJobsX.godoit")
 		assertRescanUpdates(t, jobSet, true)
 		jobSet.printJobs()
 		assertJobCount(t, jobSet, 2)
 		time.Sleep(time.Second * 2)
 
-		createJob(jobSet, "* * * * * * TestScanSwapJobs_Other")
-		removeJob(t, jobSet, "* * * * * * TestScanSwapJobs")
+		createJob(jobSet, "* * * * * * TestScanSwapJobs_Other.godoit")
+		removeJob(t, jobSet, "* * * * * * TestScanSwapJobs.godoit")
 		assertRescanUpdates(t, jobSet, true)
 		jobSet.printJobs()
 		assertJobCount(t, jobSet, 2)
@@ -91,6 +91,23 @@ func TestScanSwapJobs(t *testing.T) {
 		assertExecutions(t, "TestScanSwapJobs", 1)
 		assertExecutions(t, "TestScanSwapJobsX", 5)
 		assertExecutions(t, "TestScanSwapJobs_Other", 3)
+	})
+}
+
+
+func TestStatusScript(t *testing.T) {
+
+	withJobSet(func(jobSet1 *JobSet) {
+		createJob(jobSet1, "0 1 * * * * Job 1.godoit")
+		createJob(jobSet1, "0 2 * * * * Job 2.godoit")
+		jobSet1.Scan()
+
+		jobSetsMap := map[string]*JobSet{
+			"test_set": jobSet1,
+		}
+
+		statusFunc := StatusReporterFromScript("./test_status.sh", os.Stdout)
+		statusFunc(jobSetsMap)
 	})
 }
 

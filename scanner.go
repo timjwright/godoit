@@ -112,3 +112,4 @@ func (scanner *GoDoItScanner) Stop() {
 	log.Println("  Stopping jobs...done")
 }
 
+

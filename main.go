@@ -18,6 +18,7 @@ func main() {
 		Filename:   os.ExpandEnv(config.LogFile),
 		MaxSize:    config.LogMaxSize, // megabytes
 		MaxAge:     config.LogMaxAge, //days
+		MaxBackups: config.LogMaxBackups, //days
 	}
 	log.SetOutput(logger)
 	scanner := NewScanner(config, logger)
@@ -26,6 +27,14 @@ func main() {
 	cron.AddFunc(fmt.Sprintf("@every %ds",config.ScanTime), func(){scanner.Run()})
 	log.Println("Starting scanner")
 	cron.Start()
+
+	if config.StatusInterval > 0 {
+		statusFunc := StatusReporterFromScript(config.StatusScript, logger)
+		cron.AddFunc(fmt.Sprintf("@every %ds",config.StatusInterval), func(){
+			statusFunc(scanner.jobSets)
+		})
+	}
+
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)

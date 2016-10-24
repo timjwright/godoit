@@ -23,14 +23,26 @@ Usage:
 
 The configuration file is of the format:
 
+    // Paths to scan for jobs
     include = [ '/home/root/systemjobs','$MY_APPS_BASE/*' ]
+    // Scan period in seconds
     scanTime = 60
+    // Log file
     logFile = '$LOGDIR/godoit.log'
+    // Max log file size in MB
     logMaxSize = 7
+    // Max log file age in days
     logMaxAge = 10
+    // Max number of log files to keep
+    logMaxBackups = 5
+    // Job executor script
     jobExecutorScript = 'job_wrapper.sh'
+    // Godoit status script
+    statusScript = 'report_status.sh'
+    // Status reporing interval in seconds
+    statusInterval = 60
 
-The `scanTime` is in seconds. The `logMaxSize` is in megabytes.
+The `scanTime` and `statusInterval` are in seconds. The `logMaxSize` is in megabytes.
 
 ###Job Scripts
 The filename of the executor script is of the form:
@@ -50,7 +62,11 @@ The job executor script will be passed two arguments:
 * the job name
 * the path to the godoit job whch is to be run
 
+###Status Script
+The status script is passed a JSON payload to stdin describing all the jobs.
+This can be used to push the set of jobs to a central monitor.
+
 ###Logging
 
 Godoit writes to a rotating logfile. The logfile includes the output
-of the job executor script (`stdout` and `stderr`)
+of the job executor script, and the status reportng script (`stdout` and `stderr`)
