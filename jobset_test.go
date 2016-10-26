@@ -106,7 +106,7 @@ func TestStatusScript(t *testing.T) {
 			"test_set": jobSet1,
 		}
 
-		statusFunc := StatusReporterFromScript("./test_status.sh", os.Stdout)
+		statusFunc := StatusReporterFromScript("./test_status.sh", []string{"PATH"}, os.Stdout)
 		statusFunc(jobSetsMap)
 	})
 }

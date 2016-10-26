@@ -29,7 +29,7 @@ func main() {
 	cron.Start()
 
 	if config.StatusInterval > 0 {
-		statusFunc := StatusReporterFromScript(config.StatusScript, logger)
+		statusFunc := StatusReporterFromScript(config.StatusScript, config.StatusEnvironment, logger)
 		cron.AddFunc(fmt.Sprintf("@every %ds",config.StatusInterval), func(){
 			statusFunc(scanner.jobSets)
 		})

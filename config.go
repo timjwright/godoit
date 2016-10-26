@@ -15,9 +15,11 @@ type GoDoItConfig struct {
 	LogMaxSize int `toml:"LogMaxSize" doc:"Log fie max size"`
 	LogMaxAge int `toml:"LogMaxAge" doc:"Number of days to keep th log file"`
 	LogMaxBackups int `toml:"LogMaxBackups" doc:"Number of backup log files to keep"`
-	StatusScript string`toml:"StatuaScript" doc:"Paths for status reporting script"`
-	StatusInterval int`toml:"StatuaTime" doc:"How often status script is run in seconds"`
+	StatusScript string`toml:"StatusScript" doc:"Paths for status reporting script"`
+	StatusInterval int`toml:"StatusInterval" doc:"How often status script is run in seconds"`
+	StatusEnvironment []string `toml:"StatusEnvironment" doc:"Environment variables to include in the JSON"`
 }
+
 
 func LoadConfig() *GoDoItConfig {
 	if ( len(os.Args) != 2 ) {
@@ -25,7 +27,7 @@ func LoadConfig() *GoDoItConfig {
 	}
 	cfgFile := os.Args[1]
 	log.Printf("Loading config file: %s", cfgFile)
-	defaults := GoDoItConfig{[]string{}, "", 30, "godoit.log", 100, 14, 20, "", 60}
+	defaults := GoDoItConfig{[]string{}, "", 30, "godoit.log", 100, 14, 20, "", 60, []string{}}
 	cfg, err := config.NewConfig(cfgFile, defaults)
 	if err != nil {
 		log.Fatalf("Error loading configuration: %s", err.Error())
