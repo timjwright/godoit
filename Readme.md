@@ -84,6 +84,8 @@ The job executor script will be passed two arguments:
 * the job name
 * the path to the godoit job whch is to be run
 
+The job executor script should handle `SIGTERM` for job timeouts.
+
 ###Status Script
 The status script is passed a JSON payload to stdin describing all the jobs.
 This can be used to push the set of jobs to a central monitor.
