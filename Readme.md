@@ -41,6 +41,8 @@ The configuration file is of the format:
     statusScript = 'report_status.sh'
     // Status reporing interval in seconds
     statusInterval = 60
+    // Environment variables tp be included on the status json
+    statusEnvironment = ['MY_ENV']
 
 The `scanTime` and `statusInterval` are in seconds. The `logMaxSize` is in megabytes.
 
@@ -60,7 +62,7 @@ make file names eaier to manage:
 The `.godoit` file can also include job parameters as comment in the script of 
 the form `#:godoit <param> <value>`. This includes specifying the cronspec. 
 
-Support parameters are:
+Supported parameters are:
 
 Comment            | Detail
 -------------------|-----------
@@ -85,6 +87,9 @@ The job executor script will be passed two arguments:
 ###Status Script
 The status script is passed a JSON payload to stdin describing all the jobs.
 This can be used to push the set of jobs to a central monitor.
+
+Environment variables can be included which may be useful to add information 
+such as server location, environment type etc.
 
 The set of jobs will include disabled jobs and jobs with parameter errors.
 
