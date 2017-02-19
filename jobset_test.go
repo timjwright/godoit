@@ -12,7 +12,7 @@ import (
 
 var executions = make(map [string]int)
 
-var executor = func(name, path string) {
+var executor = func(name, path string, timeout time.Duration) {
 	log.Printf("Executing %s: %s", name, path)
 	if _,ok := executions[name]; ok {
 		executions[name] = executions[name]+1
@@ -29,19 +29,25 @@ func TestScanEmptyDir(t *testing.T) {
 	})
 }
 
-func TestScanDirWithCommentFile(t *testing.T) {
+func TestScanDirWithCommentedOutFile(t *testing.T) {
 	withJobSet(func(jobSet *JobSet) {
 		// Commened out job does not create a job
-		createJob(jobSet, "random_file")
+		createJob(jobSet, "--* * * * * * TestScanDirWithCommentedOutFile.godoit")
+		assertRescanUpdates(t, jobSet, true)
+		time.Sleep(time.Second * 3)
 		assertRescanUpdates(t, jobSet, false)
+		assertNoExecutions(t, "TestScanDirWithCommentedOutFile")
 	})
 }
 
-func TestScanDirWithIgnoredFile(t *testing.T) {
+func TestScanDirWithCommentedOutFile2(t *testing.T) {
 	withJobSet(func(jobSet *JobSet) {
 		// Commened out job does not create a job
-		createJob(jobSet, "#* * * * * * job name")
+		createJob(jobSet, "#* * * * * * TestScanDirWithCommentedOutFile2.godoit")
+		assertRescanUpdates(t, jobSet, true)
+		time.Sleep(time.Second * 3)
 		assertRescanUpdates(t, jobSet, false)
+		assertNoExecutions(t, "TestScanDirWithCommentedOutFile2")
 	})
 }
 
@@ -54,6 +60,68 @@ func TestScanCreate1SecondJob(t *testing.T) {
 		time.Sleep(time.Second * 6)
 		assertRescanUpdates(t, jobSet, false)
 		assertExecutions(t, "TestScanCreate1SecondJob", 5)
+	})
+}
+
+func TestScanCreateJobWithTimeZone(t *testing.T) {
+	withJobSet(func(jobSet *JobSet) {
+		// Commened out job does not create a job
+		createJob(jobSet, "TestScanCreateJobWithTimeZone.godoit","#:godoit cronspec * * * * *","#:godoit timezone Europe/Paris")
+		assertRescanUpdates(t, jobSet, true)
+		time.Sleep(time.Second * 6)
+		assertRescanUpdates(t, jobSet, false)
+		assertExecutions(t, "TestScanCreateJobWithTimeZone", 5)
+	})
+}
+
+func TestScanCreateJobWithTimeout(t *testing.T) {
+	withJobSet(func(jobSet *JobSet) {
+		// Commened out job does not create a job
+		createJob(jobSet, "TestScanCreateJobWithTimeout.godoit","#:godoit cronspec * * * * *","#:godoit timeout 3s")
+		assertRescanUpdates(t, jobSet, true)
+		time.Sleep(time.Second * 6)
+		assertRescanUpdates(t, jobSet, false)
+		assertExecutions(t, "TestScanCreateJobWithTimeout", 5)
+	})
+}
+
+func TestScanCreateJobWithSpecInFile(t *testing.T) {
+	withJobSet(func(jobSet *JobSet) {
+		// Commened out job does not create a job
+		createJob(jobSet, "TestScanCreateJobWithSpecInFile.godoit","#:godoit cronspec * * * * * *")
+		assertRescanUpdates(t, jobSet, true)
+		assertJobCount(t, jobSet, 1)
+		time.Sleep(time.Second * 6)
+		assertRescanUpdates(t, jobSet, false)
+		assertExecutions(t, "TestScanCreateJobWithSpecInFile", 5)
+	})
+}
+
+func TestReScanJobWithUpdatedSpecInFile(t *testing.T) {
+	withJobSet(func(jobSet *JobSet) {
+		// Commened out job does not create a job
+		createJob(jobSet, "TestReScanJobWithUpdatedSpecInFile.godoit","#:godoit cronspec 0 0 12 * * *")
+		assertRescanUpdates(t, jobSet, true)
+		assertJobCount(t, jobSet, 1)
+		time.Sleep(time.Second * 3)
+		// Should generate no executions - or 1 if we run right on 12:00!
+		assertRescanUpdates(t, jobSet, false)
+		// Now update the file
+		createJob(jobSet, "TestReScanJobWithUpdatedSpecInFile.godoit","#:godoit cronspec * * * * * *")
+		assertRescanUpdates(t, jobSet, true)
+		time.Sleep(time.Second * 6)
+		assertExecutions(t, "TestReScanJobWithUpdatedSpecInFile", 6)
+	})
+}
+
+func TestScanCreateJobWithInvalidSpecInFile(t *testing.T) {
+	withJobSet(func(jobSet *JobSet) {
+		// Commened out job does not create a job
+		createJob(jobSet, "TestScanCreateJobWithInvalidSpecInFile.godoit","#:godoit cronspec * * * *")
+		assertRescanUpdates(t, jobSet, true)
+		time.Sleep(time.Second * 3)
+		assertRescanUpdates(t, jobSet, false)
+		assertNoExecutions(t, "TestScanCreateJobWithInvalidSpecInFile")
 	})
 }
 
@@ -96,10 +164,10 @@ func TestScanSwapJobs(t *testing.T) {
 
 
 func TestStatusScript(t *testing.T) {
-
 	withJobSet(func(jobSet1 *JobSet) {
 		createJob(jobSet1, "0 1 * * * * Job 1.godoit")
-		createJob(jobSet1, "0 2 * * * * Job 2.godoit")
+		createJob(jobSet1, "0 2 * * * * Job 2.godoit", "#:godoit timeout 10s", "#:godoit timezone Europe/London")
+		createJob(jobSet1, "broken job.godoit", "#:godoit wrongparam")
 		jobSet1.Scan()
 
 		jobSetsMap := map[string]*JobSet{
@@ -123,8 +191,12 @@ func withJobSet(aFunc withJobSetFunc) {
 	aFunc(jobSet)
 }
 
-func createJob(jobSet *JobSet, script string) {
+func createJob(jobSet *JobSet, script string, lines ...string) {
 	f,_ := os.Create(path.Join(jobSet.directory,script))
+	for _,line := range lines {
+		f.WriteString(line)
+		f.WriteString("\n")
+	}
 	f.Close()
 }
 
@@ -149,7 +221,13 @@ func assertExecutions(t *testing.T, name string, minCount int) {
 			t,actualCount >= minCount,
 			"Number of executions should be at least %n but was %n", minCount, actualCount)
 	} else {
-		t.Fatalf("No executions found for job %s", name)
+		assert.Fail(t,"No executions found for job %s", name)
+	}
+}
+
+func assertNoExecutions(t *testing.T, name string) {
+	if actualCount,ok := executions[name]; ok {
+		assert.Fail(t, "Expected no executions of %s but found %n", name, actualCount)
 	}
 }
 

@@ -5,23 +5,27 @@ import (
 	"github.com/robfig/cron"
 	"path/filepath"
 	"io/ioutil"
+	"time"
+	"os"
+	"strings"
 )
 
 type JobSet struct {
 	executor JobExecutor
 	directory string
 	jobs map [string]Job
-	cron *cron.Cron
+	crons map [string]*cron.Cron
 }
 
 func NewJobSet(executor JobExecutor, directory string) *JobSet {
-	return &JobSet{executor, directory, make(map[string]Job), nil}
+	return &JobSet{executor, directory, make(map[string]Job), make(map[string]*cron.Cron)}
 }
 
 func (jobSet *JobSet) Stop() {
-	if ( jobSet.cron != nil ) {
+	for key, cron := range jobSet.crons {
 		log.Printf("  Stopping jobs in directory, %s", jobSet.directory)
-		jobSet.cron.Stop()
+		cron.Stop()
+		delete(jobSet.crons, key)
 	}
 }
 
@@ -30,24 +34,22 @@ func (jobSet *JobSet) Scan() bool {
 
 	// Scan for any new jobs
 	files, _ := ioutil.ReadDir(jobSet.directory)
-	filenames := make(map[string]bool)
+	foundFiles := make(map[string]bool)
 	for _,file := range files {
-		if ( ! file.IsDir() ) {
-			filename := file.Name()
+		filename := file.Name()
+		foundFiles[filename] = true
+		if isGodoitFile(file) && shouldParseJob(file, jobSet) {
 			job := ParseJobFile(jobSet.directory, filename)
 			if job != nil {
-				filenames[file.Name()] = true
-				if _,ok := jobSet.jobs[filename]; !ok {
-					updated = true
-					jobSet.jobs[filename] = *job
-				}
+				updated = true
+				jobSet.jobs[filename] = *job
 			}
 		}
 	}
 
 	// Remove any old jobs
 	for filename,_ := range jobSet.jobs {
-		if _,ok := filenames[filename]; ! ok {
+		if _,ok := foundFiles[filename]; ! ok {
 			updated = true
 			delete(jobSet.jobs,filename)
 		}
@@ -60,38 +62,79 @@ func (jobSet *JobSet) Scan() bool {
 	return updated
 }
 
-func (jobSet *JobSet) setupCron() {
-	if ( jobSet.cron != nil ) {
-		jobSet.cron.Stop()
-		jobSet.cron = nil
+func isGodoitFile(file os.FileInfo) bool {
+	return ! file.IsDir() && strings.HasSuffix(file.Name(), GodoitFileSuffix)
+}
+
+func shouldParseJob(file os.FileInfo, jobSet *JobSet) bool {
+	job,hasJob := jobSet.jobs[file.Name()]
+	if hasJob {
+		// If the job is know - parse if the modification time has changed
+		return job.UpdateTime != file.ModTime()
+	} else {
+		// If the job is not known - parse it
+		return true
 	}
 
-	if len(jobSet.jobs ) != 0 {
-		log.Printf("  Starting cron for %s", jobSet.directory)
-		jobSet.cron = cron.New()
-		for _,job := range jobSet.jobs {
-			addJob(jobSet.cron, jobSet.executor, job)
+}
+
+func (jobSet *JobSet) setupCron() {
+	jobSet.Stop()
+
+
+	log.Printf("  Starting crons for %s", jobSet.directory)
+	for _,job := range jobSet.jobs  {
+		if job.Enabled {
+			addJob(jobSet.cronForLocation(job.Timezone), jobSet.executor, job)
 		}
-		jobSet.cron.Start()
+	}
+	for timezone, cron := range jobSet.crons {
+		log.Printf("    Timezone: %s", timezone)
+		cron.Start()
 	}
 }
+
+func (jobSet *JobSet) cronForLocation(location *time.Location) *cron.Cron {
+	if locationCron, ok := jobSet.crons[location.String()]; ok {
+		return locationCron
+	} else {
+		var newCron = cron.NewWithLocation(location)
+		jobSet.crons[time.UTC.String()] = newCron
+		return newCron
+	}
+}
+
 
 func addJob(cron *cron.Cron, executor JobExecutor, job Job) {
 	cron.AddFunc(job.Spec, func() {runJob(executor, job)})
 }
 
 func runJob(executor JobExecutor, job Job) {
-	log.Printf("Running job %s (%s)", job.Name, filepath.Dir(job.Filepath))
-	executor(job.Name, job.Filepath)
+	log.Printf("Running job %s (%s) Timeout: %s", job.Name, filepath.Dir(job.Filepath), timeoutString(job.Timeout))
+	executor(job.Name, job.Filepath, job.Timeout)
 }
 
 func (jobSet *JobSet) printJobs() {
 	log.Printf("Jobs in %s", jobSet.directory)
 	if len(jobSet.jobs) == 0 {
-	log.Printf("  -- no jobs --")
+		log.Printf("  -- no jobs --")
 	}
 	for _,job := range jobSet.jobs {
-		log.Printf("  %s : %s", job.Spec, job.Name)
+		log.Printf(
+			"  %s (%s): %s (Timeout: %s, Enabled: %t)",
+			job.Spec,
+			job.Timezone.String(),
+			job.Name,
+			timeoutString(job.Timeout),
+			job.Enabled)
 	}
 	log.Printf("")
+}
+
+func timeoutString(timeout time.Duration) string {
+	if timeout == 0 {
+		return "None"
+	} else {
+		return timeout.String()
+	}
 }

@@ -11,6 +11,16 @@ include environment variables.
 The `.godoit` filename contains the cronspec description of when to run
 the job and the scheduled job name.
 
+The `.godoit` file can also include job parameters as comment in the script (including specifying the cronspec
+as comments of the form `#:godoit <param> <value>`
+e.g.
+
+Comment            | Detail
+-------------------|-----------
+`#:godoit cronspec ...`| The cron spec (see https://godoc.org/github.com/robfig/cron) 
+`#:godoit timeout ...` | Time as a duration after which SIGTERM is sent e.g. `1h30m`, `15s`
+`#:godoit timezone ...`| The timezone for the job e.g. `Europe/London`
+
 Godoit jobs are executed by a wrapper script which allows the deployment
 to handle specific concerns such as job logging and alerting of failures.
 

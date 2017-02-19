@@ -27,7 +27,11 @@ type JobCollection struct {
 type JobInfo struct {
 	Name string	`json:"name"`
 	Spec string `json:"spec"`
+	Timezone string `json:"timezone"`
 	Path string `json:"path"`
+	Timeout int `json:"timeout"`
+	Enabled bool `json:"enabled"`
+	Errors []string `json:"errors"`
 }
 
 func ToJson(jobSets map[string]*JobSet, statusEnvironment []string) []byte {
@@ -37,7 +41,15 @@ func ToJson(jobSets map[string]*JobSet, statusEnvironment []string) []byte {
 		jobs := make([]JobInfo, len(jobSet.jobs))
 		j := 0
 		for _, job := range jobSet.jobs {
-			jobs[j] = JobInfo{job.Name, job.Spec, job.Filepath}
+			jobs[j] =
+				JobInfo{
+					job.Name,
+					job.Spec,
+					job.Timezone.String(),
+					job.Filepath,
+					int(job.Timeout.Seconds()),
+					job.Enabled,
+					job.Errors}
 			j++
 
 		}
