@@ -8,18 +8,8 @@ directories for files ending in `.godoit` and schedule them.
 The set of directories can be specified to include the wildcard `*` and
 include environment variables.
 
-The `.godoit` filename contains the cronspec description of when to run
+The `.godoit` filename or file contains the cronspec description of when to run
 the job and the scheduled job name.
-
-The `.godoit` file can also include job parameters as comment in the script (including specifying the cronspec
-as comments of the form `#:godoit <param> <value>`
-e.g.
-
-Comment            | Detail
--------------------|-----------
-`#:godoit cronspec ...`| The cron spec (see https://godoc.org/github.com/robfig/cron) 
-`#:godoit timeout ...` | Time as a duration after which SIGTERM is sent e.g. `1h30m`, `15s`
-`#:godoit timezone ...`| The timezone for the job e.g. `Europe/London`
 
 Godoit jobs are executed by a wrapper script which allows the deployment
 to handle specific concerns such as job logging and alerting of failures.
@@ -55,16 +45,36 @@ The configuration file is of the format:
 The `scanTime` and `statusInterval` are in seconds. The `logMaxSize` is in megabytes.
 
 ###Job Scripts
-The filename of the executor script is of the form:
+Godoit scripts are named with a `.godoit` suffix. The cronspec can be specified in the 
+filename or inside the file as a parameter. When specifying in the filename the form would be:
 
     <cronspec> <jobname>.godoit
     e.g.
     0 0 18 x x SUN weekend restart.godoit
 
-In the cron spec alternative charecters can be used to
+For the cronspec included in the filename alternative characters can be used to
 make file names eaier to manage:
 * `*` can be replaced with `x`
 * `/` can be replaced with `%`
+
+The `.godoit` file can also include job parameters as comment in the script of 
+the form `#:godoit <param> <value>`. This includes specifying the cronspec. 
+
+Support parameters are:
+
+Comment            | Detail
+-------------------|-----------
+`#:godoit cronspec ...`| The cron spec (see https://godoc.org/github.com/robfig/cron) 
+`#:godoit timeout ...` | Time as a duration after which SIGTERM is sent e.g. `1h30m`, `15s`
+`#:godoit timezone ...`| The timezone for the job e.g. `Europe/London`
+
+If the cronspec is specified in both places this is an error and the job will be disabled.
+Errors parsing the parameters above will also disable the job.
+Godoit will check the modification time of files to detect changes.
+
+*NOTE: Parameters must be specified in the first 10 lines of the file.*
+
+If the `.godoit` filename starts with either `#` or `--` the job will be considered disabled.
 
 ###Job Executor
 
@@ -75,6 +85,8 @@ The job executor script will be passed two arguments:
 ###Status Script
 The status script is passed a JSON payload to stdin describing all the jobs.
 This can be used to push the set of jobs to a central monitor.
+
+The set of jobs will include disabled jobs and jobs with parameter errors.
 
 ###Logging
 
