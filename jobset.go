@@ -95,11 +95,12 @@ func (jobSet *JobSet) setupCron() {
 }
 
 func (jobSet *JobSet) cronForLocation(location *time.Location) *cron.Cron {
-	if locationCron, ok := jobSet.crons[location.String()]; ok {
+	timezoneName := location.String()
+	if locationCron, ok := jobSet.crons[timezoneName]; ok {
 		return locationCron
 	} else {
 		var newCron = cron.NewWithLocation(location)
-		jobSet.crons[time.UTC.String()] = newCron
+		jobSet.crons[timezoneName] = newCron
 		return newCron
 	}
 }
